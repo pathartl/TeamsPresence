@@ -102,14 +102,14 @@ namespace TeamsPresence
 
         private static void Service_StatusChanged(object sender, TeamsStatus status)
         {
-            HomeAssistantService.UpdateEntity(Config.StatusEntity, status.ToString(), Config.FriendlyStatusNames[status], "mdi:microsoft-teams");
+            HomeAssistantService.UpdateEntity(Config.StatusEntity, Config.FriendlyStatusNames[status], Config.FriendlyStatusNames[status], "mdi:microsoft-teams");
 
             Console.WriteLine($"Updated status to {Config.FriendlyStatusNames[status]} ({status})");
         }
 
         private static void Service_ActivityChanged(object sender, TeamsActivity activity)
         {
-            HomeAssistantService.UpdateEntity(Config.ActivityEntity, activity.ToString(), Config.FriendlyActivityNames[activity], "mdi:microsoft-teams");
+            HomeAssistantService.UpdateEntity(Config.ActivityEntity, Config.FriendlyActivityNames[activity], Config.FriendlyActivityNames[activity], Config.ActivityIcons[activity]);
 
             Console.WriteLine($"Updated activity to {Config.FriendlyActivityNames[activity]} ({activity})");
         }

@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 [assembly: AssemblyTitle("Teams Presence")]
-[assembly: AssemblyDescription("")]
+[assembly: AssemblyDescription("Report Microsoft Teams status back to Home Assistant")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
 [assembly: AssemblyProduct("Teams Presence")]
