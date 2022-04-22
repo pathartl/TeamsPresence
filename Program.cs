@@ -1,11 +1,15 @@
 ﻿using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Resources;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
+using System.Windows.Forms;
 
 namespace TeamsPresence
 {
@@ -15,21 +19,39 @@ namespace TeamsPresence
         private static TeamsLogService TeamsLogService;
         private static TeamsPresenceConfig Config;
 
+        private static NotifyIcon NotifyIcon;
+        private static string ConfigDirectory;
+
         static void Main(string[] args)
         {
-            var configFile = "config.json";
+            SetupNotifyIcon();
 
-            if (File.Exists(configFile))
+            var configFile = "config.json";
+            var configPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Teams Presence");
+            var configFilePath = Path.Combine(configPath, configFile);
+
+            if (!Directory.Exists(configPath))
+                Directory.CreateDirectory(configPath);
+
+            ConfigDirectory = configPath;
+
+            if (File.Exists(configFilePath))
             {
                 Console.WriteLine("Config file found!");
 
                 try
                 {
-                    Config = JsonConvert.DeserializeObject<TeamsPresenceConfig>(File.ReadAllText(configFile));
+                    Config = JsonConvert.DeserializeObject<TeamsPresenceConfig>(File.ReadAllText(configFilePath));
                 }
                 catch
                 {
-                    Console.WriteLine("Config file could not be used. Either fix it or delete it and restart this application to scaffold a new one.");
+                    NotifyIcon.BalloonTipText = "Config file error. Please fix or recreate.";
+
+                    NotifyIcon.ShowBalloonTip(2000);
+
+                    OpenConfigDirectory();
+
+                    return;
                 }
             }
             else
@@ -71,33 +93,84 @@ namespace TeamsPresence
                     }
                 };
 
-                File.WriteAllText(configFile, JsonConvert.SerializeObject(Config, new JsonSerializerSettings()
+                File.WriteAllText(configFilePath, JsonConvert.SerializeObject(Config, new JsonSerializerSettings()
                 {
                     Formatting = Formatting.Indented
                 }));
 
-                Console.WriteLine("Done. Fill out the config file and restart this application.");
+                NotifyIcon.BalloonTipText = "Generated blank config. Fill out and restart this application.";
+
+                NotifyIcon.ShowBalloonTip(2000);
+
+                OpenConfigDirectory();
 
                 return;
             }
 
-            if (!String.IsNullOrWhiteSpace(Config.AppDataRoamingPath))
-            {
-                TeamsLogService = new TeamsLogService(Config.AppDataRoamingPath);
-            }
-            else
-            {
-                TeamsLogService = new TeamsLogService();
-            }
-
+            TeamsLogService = new TeamsLogService();
             HomeAssistantService = new HomeAssistantService(Config.HomeAssistantUrl, Config.HomeAssistantToken);
 
             TeamsLogService.StatusChanged += Service_StatusChanged;
             TeamsLogService.ActivityChanged += Service_ActivityChanged;
 
-            Console.WriteLine("Service started. Waiting for Teams updates...");
+            Thread presenceDetectionThread = new Thread(
+                delegate ()
+                {
+                    TeamsLogService.Start();
+                });
 
-            TeamsLogService.Start();
+            NotifyIcon.BalloonTipText = "Service started. Waiting for Teams updates...";
+
+            NotifyIcon.ShowBalloonTip(2000);
+
+            presenceDetectionThread.Start();
+
+            Application.Run();
+        }
+
+        private static void SetupNotifyIcon()
+        {
+            NotifyIcon = new NotifyIcon()
+            {
+                Icon = Resources.Icon,
+                Visible = true,
+                Text = "Teams Presence",
+                BalloonTipTitle = "Teams Presence",
+                BalloonTipIcon = ToolTipIcon.Info,
+                ContextMenu = new ContextMenu()
+            };
+
+            var exitMenuItem = new MenuItem()
+            {
+                Text = "Quit",
+                Index = 0,
+            };
+
+            exitMenuItem.Click += Program.Quit;
+
+            var openConfigFolderMenuItem = new MenuItem()
+            {
+                Text = "Open Config Folder",
+                Index = 1
+            };
+
+            openConfigFolderMenuItem.Click += OpenConfigDirectory;
+
+            NotifyIcon.ContextMenu.MenuItems.AddRange(new MenuItem[] {
+                exitMenuItem,
+                openConfigFolderMenuItem
+            });
+        }
+
+        private static void OpenConfigDirectory()
+        {
+            ProcessStartInfo startInfo = new ProcessStartInfo
+            {
+                Arguments = ConfigDirectory,
+                FileName = "explorer.exe"
+            };
+
+            Process.Start(startInfo);
         }
 
         private static void Service_StatusChanged(object sender, TeamsStatus status)
@@ -112,6 +185,16 @@ namespace TeamsPresence
             HomeAssistantService.UpdateEntity(Config.ActivityEntity, Config.FriendlyActivityNames[activity], Config.FriendlyActivityNames[activity], Config.ActivityIcons[activity]);
 
             Console.WriteLine($"Updated activity to {Config.FriendlyActivityNames[activity]} ({activity})");
+        }
+
+        private static void OpenConfigDirectory(object sender, EventArgs e)
+        {
+            OpenConfigDirectory();
+        }
+
+        private static void Quit(object sender, EventArgs e)
+        {
+            Environment.Exit(0);
         }
     }
 }
