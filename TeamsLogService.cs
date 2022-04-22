@@ -15,6 +15,10 @@ namespace TeamsPresence
         public event EventHandler<TeamsStatus> StatusChanged;
         public event EventHandler<TeamsActivity> ActivityChanged;
 
+        private TeamsStatus CurrentStatus;
+        private TeamsActivity CurrentActivity;
+        private bool Started = false;
+
         private Stopwatch Stopwatch { get; set; }
         private string LogPath { get; set; }
 
@@ -52,19 +56,29 @@ namespace TeamsPresence
                 {
                     while (true)
                     {
+                        Thread.Sleep(100);
+
+                        // Throttle based on the stopwatch so we're not sending
+                        // tons of updates to Home Assistant.
+                        if (Stopwatch.Elapsed.TotalSeconds > 2)
+                        {
+                            Stopwatch.Stop();
+
+                            if (Started == false)
+                            {
+                                Started = true;
+                                StatusChanged?.Invoke(this, CurrentStatus);
+                                ActivityChanged?.Invoke(this, CurrentActivity);
+                            }
+                        }
+
                         latch.WaitOne();
                         lock (lockMe)
                         {
                             String line;
                             while ((line = sr.ReadLine()) != null)
                             {
-                                if (Stopwatch.Elapsed.TotalSeconds > 2)
-                                {
-                                    Stopwatch.Stop();
-                                }
-                                
-                                if (!Stopwatch.IsRunning)
-                                    LogFileChanged(line);
+                                LogFileChanged(line, Stopwatch.IsRunning);
                             }
                             latch.Set();
                         }
@@ -73,9 +87,8 @@ namespace TeamsPresence
             }
         }
 
-        private void LogFileChanged(string line)
+        private void LogFileChanged(string line, bool throttled)
         {
-
             string statusPattern = @"StatusIndicatorStateService: Added (\w+)";
             string activityPattern = @"name: desktop_call_state_change_send, isOngoing: (\w+)";
 
@@ -89,14 +102,22 @@ namespace TeamsPresence
                 if (m.Groups[1].Value != "NewActivity")
                 {
                     Enum.TryParse<TeamsStatus>(m.Groups[1].Value, out status);
-                    StatusChanged?.Invoke(this, status);
+
+                    CurrentStatus = status;
+
+                    if (!throttled)
+                        StatusChanged?.Invoke(this, status);
                 }
             }
 
             foreach (Match m in Regex.Matches(line, activityPattern, options))
             {
                 activity = m.Groups[1].Value == "true" ? TeamsActivity.InACall : TeamsActivity.NotInACall;
-                ActivityChanged?.Invoke(this, activity);
+
+                CurrentActivity = activity;
+
+                if (!throttled)
+                    ActivityChanged?.Invoke(this, activity);
             }
         }
     }
