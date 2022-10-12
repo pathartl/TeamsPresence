@@ -61,7 +61,7 @@
     <GenerateManifests>true</GenerateManifests>
   </PropertyGroup>
   <PropertyGroup>
-    <SignManifests>true</SignManifests>
+    <SignManifests>false</SignManifests>
   </PropertyGroup>
   <PropertyGroup>
     <ApplicationIcon>Icon.ico</ApplicationIcon>
@@ -89,6 +89,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CameraDetectionService.cs" />
     <Compile Include="HomeAssistantEntityStateUpdate.cs" />
     <Compile Include="HomeAssistantEntityStateUpdateAttributes.cs" />
     <Compile Include="HomeAssistantService.cs" />
@@ -106,7 +107,6 @@
   <ItemGroup>
     <None Include="App.config" />
     <None Include="packages.config" />
-    <None Include="TeamsPresence_TemporaryKey.pfx" />
   </ItemGroup>
   <ItemGroup>
     <Compile Update="Resource.Designer.cs">

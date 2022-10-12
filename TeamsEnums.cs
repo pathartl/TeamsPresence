@@ -28,4 +28,10 @@ namespace TeamsPresence
         NotInACall,
         InACall
     }
+
+    public enum CameraStatus
+    {
+        Inactive,
+        Active
+    }
 }

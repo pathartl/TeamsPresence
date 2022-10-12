@@ -14,10 +14,18 @@ namespace TeamsPresence
 
         public string StatusEntity { get; set; }
         public string ActivityEntity { get; set; }
+        public string CameraStatusEntity { get; set; }
+        public string CameraAppEntity { get; set; }
+
+        public int CameraStatusPollingRate { get; set; }
 
         public Dictionary<TeamsStatus, string> FriendlyStatusNames { get; set; }
         public Dictionary<TeamsActivity, string> FriendlyActivityNames { get; set; }
+        public Dictionary<CameraStatus, string> FriendlyCameraStatusNames { get; set; }
 
         public Dictionary<TeamsActivity, string> ActivityIcons { get; set; }
+        public Dictionary<CameraStatus, string> CameraStatusIcons { get; set; }
+
+        public string CameraAppIcon { get; set; }
     }
 }

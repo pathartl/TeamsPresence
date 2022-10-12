@@ -17,6 +17,7 @@ namespace TeamsPresence
     {
         private static HomeAssistantService HomeAssistantService;
         private static TeamsLogService TeamsLogService;
+        private static CameraDetectionService CameraDetectionService;
         private static TeamsPresenceConfig Config;
 
         private static NotifyIcon NotifyIcon;
@@ -63,8 +64,11 @@ namespace TeamsPresence
                     HomeAssistantUrl = "https://yourha.duckdns.org",
                     HomeAssistantToken = "eyJ0eXAiOiJKV1...",
                     AppDataRoamingPath = "",
-                    StatusEntity = "sensor.teams_status",
-                    ActivityEntity = "sensor.teams_activity",
+                    StatusEntity = "sensor.teams_presence_status",
+                    ActivityEntity = "sensor.teams_presence_activity",
+                    CameraAppEntity = "sensor.teams_presence_camera_app",
+                    CameraStatusEntity = "sensor.teams_presence_camera_status",
+                    CameraStatusPollingRate = 1000,
                     FriendlyStatusNames = new Dictionary<TeamsStatus, string>()
                     {
                         { TeamsStatus.Available, "Available" },
@@ -85,12 +89,23 @@ namespace TeamsPresence
                         { TeamsActivity.NotInACall, "Not in a call" },
                         { TeamsActivity.Unknown, "Unknown" }
                     },
+                    FriendlyCameraStatusNames = new Dictionary<CameraStatus, string>()
+                    {
+                        { CameraStatus.Inactive, "Inactive" },
+                        { CameraStatus.Active, "Active" }
+                    },
                     ActivityIcons = new Dictionary<TeamsActivity, string>()
                     {
                         { TeamsActivity.InACall, "mdi:phone-in-talk-outline" },
                         { TeamsActivity.NotInACall, "mdi:phone-off" },
                         { TeamsActivity.Unknown, "mdi:phone-cancel" }
-                    }
+                    },
+                    CameraStatusIcons = new Dictionary<CameraStatus, string>()
+                    {
+                        { CameraStatus.Inactive, "mdi:webcam-off" },
+                        { CameraStatus.Active, "mdi:webcam" }
+                    },
+                    CameraAppIcon = "mdi:application"
                 };
 
                 File.WriteAllText(configFilePath, JsonConvert.SerializeObject(Config, new JsonSerializerSettings()
@@ -108,10 +123,13 @@ namespace TeamsPresence
             }
 
             TeamsLogService = new TeamsLogService();
+            CameraDetectionService = new CameraDetectionService(Config.CameraStatusPollingRate);
             HomeAssistantService = new HomeAssistantService(Config.HomeAssistantUrl, Config.HomeAssistantToken);
 
             TeamsLogService.StatusChanged += Service_StatusChanged;
             TeamsLogService.ActivityChanged += Service_ActivityChanged;
+
+            CameraDetectionService.StatusChanged += Camera_StatusChanged;
 
             Thread presenceDetectionThread = new Thread(
                 delegate ()
@@ -119,11 +137,18 @@ namespace TeamsPresence
                     TeamsLogService.Start();
                 });
 
+            Thread cameraDetectionThread = new Thread(
+                delegate ()
+                {
+                    CameraDetectionService.Start();
+                });
+
             NotifyIcon.BalloonTipText = "Service started. Waiting for Teams updates...";
 
             NotifyIcon.ShowBalloonTip(2000);
 
             presenceDetectionThread.Start();
+            cameraDetectionThread.Start();
 
             Application.Run();
         }
@@ -185,6 +210,17 @@ namespace TeamsPresence
             HomeAssistantService.UpdateEntity(Config.ActivityEntity, Config.FriendlyActivityNames[activity], Config.FriendlyActivityNames[activity], Config.ActivityIcons[activity]);
 
             Console.WriteLine($"Updated activity to {Config.FriendlyActivityNames[activity]} ({activity})");
+        }
+
+        private static void Camera_StatusChanged(object sender, CameraStatusChangedEventArgs args)
+        {
+            HomeAssistantService.UpdateEntity(Config.CameraStatusEntity, Config.FriendlyCameraStatusNames[args.Status], Config.FriendlyCameraStatusNames[args.Status], Config.CameraStatusIcons[args.Status]);
+
+            Console.WriteLine($"Updated camera status to {args.Status}");
+
+            HomeAssistantService.UpdateEntity(Config.CameraAppEntity, args.AppName, args.AppName, Config.CameraAppIcon);
+
+            Console.WriteLine($"Updated camera app to {args.AppName}");
         }
 
         private static void OpenConfigDirectory(object sender, EventArgs e)
