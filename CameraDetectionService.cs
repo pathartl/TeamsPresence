@@ -62,12 +62,34 @@ namespace TeamsPresence
 
             foreach (var app in key.GetSubKeyNames())
             {
-                var lastUsedTimeStop = Registry.CurrentUser.OpenSubKey($@"{SubKey}\{app}")?.GetValue("LastUsedTimeStop");
-
-                if (lastUsedTimeStop != null && (long)lastUsedTimeStop == 0)
+                if (app == "NonPackaged")
                 {
-                    return app;
+                    var nonPackagedKeys = Registry.CurrentUser.OpenSubKey($@"{SubKey}\{app}");
+
+                    foreach (var packageKey in nonPackagedKeys.GetSubKeyNames())
+                    {
+                        var lastUsedTimeStop = Registry.CurrentUser.OpenSubKey($@"{SubKey}\{app}\{packageKey}")?.GetValue("LastUsedTimeStop");
+
+
+                        if (lastUsedTimeStop != null && (long)lastUsedTimeStop == 0)
+                        {
+                            var tokens = packageKey.Split('#');
+
+                            return tokens.Last();
+                        }
+                    }
                 }
+                else
+                {
+                    var lastUsedTimeStop = Registry.CurrentUser.OpenSubKey($@"{SubKey}\{app}")?.GetValue("LastUsedTimeStop");
+
+
+                    if (lastUsedTimeStop != null && (long)lastUsedTimeStop == 0)
+                    {
+                        return app;
+                    }
+                }
+
             }
 
             return "";
