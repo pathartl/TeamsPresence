@@ -7,29 +7,11 @@ When you run the application for the first time it will create a sample `config.
 
 **Note:** You can set the `AppDataRoamingPath` to hard code which user profile is used for `%appdata%`
 
-Some changes to Home Assistant's config is also needed. Add the following to your `configuration.yaml`:
+No changes are required to Home Assistant's config. This application will populate the following sensors by default (identifiers and friendly names can be changed in the `config.json` file):
 
-```yaml
-sensor:
-    - platform: template
-      sensors:
-        teams_status:
-            friendly_name: "Microsoft Teams status"
-            value_template: "{{states('input_text.teams_status')}}"
-            icon_template: "{{state_attr('input_text.teams_status','icon')}}"
-            unique_id: sensor.teams_status
-        teams_activity:
-            friendly_name: "Microsoft Teams activity"
-            value_template: "{{states('input_text.teams_activity')}}"
-            unique_id: sensor.teams_activity
+- `sensor.teams_presence_status`
+- `sensor.teams_presence_activity`
+- `sensor.teams_presence_camera_app`
+- `sensor.teams_presence_camera_status`
 
-input_text:
-    teams_status:
-        name: Microsoft Teams Status
-        icon: mdi:microsoft-teams
-    teams_activity:
-        name: Microsoft Teams Activity
-        icon: mdi:phone-off
-```
-
-Once these steps are completed, you should be able to start the application and see changes to your Teams status and call activity get updated both in the console and in Home Assistant.
+Once this step is completed, you should be able to start the application and see changes to your Teams status and call activity get updated both in the console and in Home Assistant.
