@@ -13,9 +13,13 @@ namespace TeamsPresence
         public string AppDataRoamingPath { get; set; }
 
         public string StatusEntity { get; set; }
+        public string StatusEntityFriendlyName { get; set; }
         public string ActivityEntity { get; set; }
+        public string ActivityEntityFriendlyName { get; set; }
         public string CameraStatusEntity { get; set; }
+        public string CameraStatusEntityFriendlyName { get; set; }
         public string CameraAppEntity { get; set; }
+        public string CameraAppEntityFriendlyName { get; set; }
 
         public int CameraStatusPollingRate { get; set; }
 

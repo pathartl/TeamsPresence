@@ -3,12 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
-using System.Resources;
-using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace TeamsPresence
@@ -59,54 +54,7 @@ namespace TeamsPresence
             {
                 Console.WriteLine("Config file doesn't exist. Creating...");
 
-                Config = new TeamsPresenceConfig()
-                {
-                    HomeAssistantUrl = "https://yourha.duckdns.org",
-                    HomeAssistantToken = "eyJ0eXAiOiJKV1...",
-                    AppDataRoamingPath = "",
-                    StatusEntity = "sensor.teams_presence_status",
-                    ActivityEntity = "sensor.teams_presence_activity",
-                    CameraAppEntity = "sensor.teams_presence_camera_app",
-                    CameraStatusEntity = "sensor.teams_presence_camera_status",
-                    CameraStatusPollingRate = 1000,
-                    FriendlyStatusNames = new Dictionary<TeamsStatus, string>()
-                    {
-                        { TeamsStatus.Available, "Available" },
-                        { TeamsStatus.Busy, "Busy" },
-                        { TeamsStatus.OnThePhone, "On the phone" },
-                        { TeamsStatus.Away, "Away" },
-                        { TeamsStatus.BeRightBack, "Be right back" },
-                        { TeamsStatus.DoNotDisturb, "Do not disturb" },
-                        { TeamsStatus.Presenting, "Presenting" },
-                        { TeamsStatus.Focusing, "Focusing" },
-                        { TeamsStatus.InAMeeting, "In a meeting" },
-                        { TeamsStatus.Offline, "Offline" },
-                        { TeamsStatus.Unknown, "Unknown" }
-                    },
-                    FriendlyActivityNames = new Dictionary<TeamsActivity, string>()
-                    {
-                        { TeamsActivity.InACall, "In a call" },
-                        { TeamsActivity.NotInACall, "Not in a call" },
-                        { TeamsActivity.Unknown, "Unknown" }
-                    },
-                    FriendlyCameraStatusNames = new Dictionary<CameraStatus, string>()
-                    {
-                        { CameraStatus.Inactive, "Inactive" },
-                        { CameraStatus.Active, "Active" }
-                    },
-                    ActivityIcons = new Dictionary<TeamsActivity, string>()
-                    {
-                        { TeamsActivity.InACall, "mdi:phone-in-talk-outline" },
-                        { TeamsActivity.NotInACall, "mdi:phone-off" },
-                        { TeamsActivity.Unknown, "mdi:phone-cancel" }
-                    },
-                    CameraStatusIcons = new Dictionary<CameraStatus, string>()
-                    {
-                        { CameraStatus.Inactive, "mdi:webcam-off" },
-                        { CameraStatus.Active, "mdi:webcam" }
-                    },
-                    CameraAppIcon = "mdi:application"
-                };
+                Config = GenerateDefaultConfig();
 
                 File.WriteAllText(configFilePath, JsonConvert.SerializeObject(Config, new JsonSerializerSettings()
                 {
@@ -151,6 +99,62 @@ namespace TeamsPresence
             cameraDetectionThread.Start();
 
             Application.Run();
+        }
+
+        private static TeamsPresenceConfig GenerateDefaultConfig()
+        {
+            return new TeamsPresenceConfig()
+            {
+                HomeAssistantUrl = "https://yourha.duckdns.org",
+                HomeAssistantToken = "eyJ0eXAiOiJKV1...",
+                AppDataRoamingPath = "",
+                StatusEntity = "sensor.teams_presence_status",
+                StatusEntityFriendlyName = "Microsoft Teams status",
+                ActivityEntity = "sensor.teams_presence_activity",
+                ActivityEntityFriendlyName = "Microsoft Teams activity",
+                CameraAppEntity = "sensor.teams_presence_camera_app",
+                CameraAppEntityFriendlyName = "Microsoft Teams camera app",
+                CameraStatusEntity = "sensor.teams_presence_camera_status",
+                CameraStatusEntityFriendlyName = "Microsoft Teams camera status",
+                CameraStatusPollingRate = 1000,
+                FriendlyStatusNames = new Dictionary<TeamsStatus, string>()
+                    {
+                        { TeamsStatus.Available, "Available" },
+                        { TeamsStatus.Busy, "Busy" },
+                        { TeamsStatus.OnThePhone, "On the phone" },
+                        { TeamsStatus.Away, "Away" },
+                        { TeamsStatus.BeRightBack, "Be right back" },
+                        { TeamsStatus.DoNotDisturb, "Do not disturb" },
+                        { TeamsStatus.Presenting, "Presenting" },
+                        { TeamsStatus.Focusing, "Focusing" },
+                        { TeamsStatus.InAMeeting, "In a meeting" },
+                        { TeamsStatus.Offline, "Offline" },
+                        { TeamsStatus.Unknown, "Unknown" }
+                    },
+                FriendlyActivityNames = new Dictionary<TeamsActivity, string>()
+                    {
+                        { TeamsActivity.InACall, "In a call" },
+                        { TeamsActivity.NotInACall, "Not in a call" },
+                        { TeamsActivity.Unknown, "Unknown" }
+                    },
+                FriendlyCameraStatusNames = new Dictionary<CameraStatus, string>()
+                    {
+                        { CameraStatus.Inactive, "Inactive" },
+                        { CameraStatus.Active, "Active" }
+                    },
+                ActivityIcons = new Dictionary<TeamsActivity, string>()
+                    {
+                        { TeamsActivity.InACall, "mdi:phone-in-talk-outline" },
+                        { TeamsActivity.NotInACall, "mdi:phone-off" },
+                        { TeamsActivity.Unknown, "mdi:phone-cancel" }
+                    },
+                CameraStatusIcons = new Dictionary<CameraStatus, string>()
+                    {
+                        { CameraStatus.Inactive, "mdi:webcam-off" },
+                        { CameraStatus.Active, "mdi:webcam" }
+                    },
+                CameraAppIcon = "mdi:application"
+            };
         }
 
         private static void SetupNotifyIcon()
@@ -200,25 +204,41 @@ namespace TeamsPresence
 
         private static void Service_StatusChanged(object sender, TeamsStatus status)
         {
-            HomeAssistantService.UpdateEntity(Config.StatusEntity, Config.FriendlyStatusNames[status], Config.FriendlyStatusNames[status], "mdi:microsoft-teams");
+            HomeAssistantService.UpdateEntity(
+                Config.StatusEntity,
+                Config.StatusEntityFriendlyName,
+                Config.FriendlyStatusNames[status],
+                "mdi:microsoft-teams");
 
             Console.WriteLine($"Updated status to {Config.FriendlyStatusNames[status]} ({status})");
         }
 
         private static void Service_ActivityChanged(object sender, TeamsActivity activity)
         {
-            HomeAssistantService.UpdateEntity(Config.ActivityEntity, Config.FriendlyActivityNames[activity], Config.FriendlyActivityNames[activity], Config.ActivityIcons[activity]);
+            HomeAssistantService.UpdateEntity(
+                Config.ActivityEntity,
+                Config.ActivityEntityFriendlyName,
+                Config.FriendlyActivityNames[activity],
+                Config.ActivityIcons[activity]);
 
             Console.WriteLine($"Updated activity to {Config.FriendlyActivityNames[activity]} ({activity})");
         }
 
         private static void Camera_StatusChanged(object sender, CameraStatusChangedEventArgs args)
         {
-            HomeAssistantService.UpdateEntity(Config.CameraStatusEntity, Config.FriendlyCameraStatusNames[args.Status], Config.FriendlyCameraStatusNames[args.Status], Config.CameraStatusIcons[args.Status]);
+            HomeAssistantService.UpdateEntity(
+                Config.CameraStatusEntity,
+                Config.CameraStatusEntityFriendlyName,
+                Config.FriendlyCameraStatusNames[args.Status],
+                Config.CameraStatusIcons[args.Status]);
 
             Console.WriteLine($"Updated camera status to {args.Status}");
 
-            HomeAssistantService.UpdateEntity(Config.CameraAppEntity, args.AppName, args.AppName, Config.CameraAppIcon);
+            HomeAssistantService.UpdateEntity(
+                Config.CameraAppEntity,
+                Config.CameraAppEntityFriendlyName,
+                args.AppName,
+                Config.CameraAppIcon);
 
             Console.WriteLine($"Updated camera app to {args.AppName}");
         }

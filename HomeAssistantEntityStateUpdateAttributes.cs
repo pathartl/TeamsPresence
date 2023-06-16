@@ -5,7 +5,7 @@ namespace TeamsPresence
     public class HomeAssistantEntityStateUpdateAttributes
     {
         [JsonProperty(PropertyName = "friendly_name")]
-        public string FriendlyName { get; set; }
+        public string EntityFriendlyName { get; set; }
 
         [JsonProperty(PropertyName = "icon")]
         public string Icon { get; set; }

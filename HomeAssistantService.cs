@@ -5,28 +5,24 @@ namespace TeamsPresence
 {
     public class HomeAssistantService
     {
-        private string Token { get; set; }
-        private string Url { get; set; }
         private RestClient Client { get; set; }
 
         public HomeAssistantService(string url, string token)
         {
-            Token = token;
-            Url = url;
             Client = new RestClient(url);
 
-            Client.AddDefaultHeader("Authorization", $"Bearer {Token}");
+            Client.AddDefaultHeader("Authorization", $"Bearer {token}");
             Client.UseNewtonsoftJson();
         }
 
-        public void UpdateEntity(string entity, string state, string stateFriendlyName, string icon)
+        public void UpdateEntity(string entity, string entityFriendlyName, string state, string icon)
         {
             var update = new HomeAssistantEntityStateUpdate()
             {
                 State = state,
                 Attributes = new HomeAssistantEntityStateUpdateAttributes()
                 {
-                    FriendlyName = stateFriendlyName,
+                    EntityFriendlyName = entityFriendlyName,
                     Icon = icon
                 }
             };
